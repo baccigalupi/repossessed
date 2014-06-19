@@ -93,4 +93,39 @@ describe Repossessed::Parser do
       })
     end
   end
+
+  describe 'when using the default class' do
+    let(:parser) {
+      Repossessed::Parser.new(params)
+    }
+
+    let(:params) {
+      {
+        'bird' => 'robin',
+        'gerbil' => 'fuzzy'
+      }
+    }
+
+    it "can be told to allow certain keys" do
+      parser.allow(:bird, :dog)
+      parser.attrs.must_equal({
+        bird: 'robin'
+      })
+    end
+
+    it "can add key value pairs" do
+      parser.allow(:bird, :gerbil) # so that it works
+      parser.add({
+        random: 'thing',
+        also: 'this'
+      })
+
+      parser.attrs.must_equal({
+        bird: 'robin',
+        gerbil: 'fuzzy',
+        random: 'thing',
+        also: 'this'
+      })
+    end
+  end
 end

@@ -5,7 +5,7 @@ require 'mocha/mini_test'
 
 describe Repossessed::Upserter do
   let(:persistence_class) {
-    stub('AP persistence class', {
+    stub('AR persistence class', {
       where: stub(take: record),
       create: record
     })
@@ -64,6 +64,33 @@ describe Repossessed::Upserter do
       it 'returns the record' do
         upserter.save.must_equal record
       end
+    end
+  end
+
+  describe "when class is configured" do
+    let(:upserter_class) {
+      class UpserterClass < Repossessed::Upserter
+        def find_keys
+          [:program_id, :type]
+        end
+      end
+
+      UpserterClass
+    }
+
+    let(:upserter) { upserter_class.new(attrs: attrs, persistence_class: persistence_class) }
+
+    let(:attrs) {
+      {
+        program_id: 324,
+        type: 'that_thing',
+        _value: 'it is!'
+      }
+    }
+
+    it 'finds existing record via these keys' do
+      persistence_class.expects(:where).with(program_id: 324, type: 'that_thing').returns(stub(take: record))
+      upserter.save
     end
   end
 end
