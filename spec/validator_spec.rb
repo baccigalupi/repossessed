@@ -22,6 +22,16 @@ describe Repossessed::Validator do
     end
   end
 
+  describe '#add' do
+    it "creates a rule via that class" do
+      rule = Repossessed::Validator::Rule.new(:name, {other_value: 'fishy'}) do |value|
+        value.include?('fish')
+      end
+      validator.add(rule)
+      validator.rules.first.must_equal(rule)
+    end
+  end
+
   describe "#validate" do
     it 'calls the rule(s) and reports back the error' do
       validator.ensure(:name) { |value| !value.nil? }

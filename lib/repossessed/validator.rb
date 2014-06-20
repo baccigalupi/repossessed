@@ -9,7 +9,13 @@ module Repossessed
     end
 
     def ensure(attr, message=nil, &block)
-      rules << Repossessed::Validator::Rule.new(attr, attrs, message, &block)
+      add(
+        Repossessed::Validator::Rule.new(attr, attrs, message, &block)
+      )
+    end
+
+    def add(rule)
+      rules << rule
     end
 
     def validate
