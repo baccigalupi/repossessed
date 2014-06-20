@@ -18,6 +18,10 @@ module Repossessed
       record
     end
 
+    def success?
+      record && record.errors.empty?
+    end
+
     def create
       @record = persistence_class.create(save_attrs)
     end

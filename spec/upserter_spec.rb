@@ -20,7 +20,14 @@ describe Repossessed::Upserter do
 
   let(:record) {
     stub('AR record', {
-      update_attributes: true
+      update_attributes: true,
+      errors: errors
+    })
+  }
+
+  let(:errors) {
+    stub('AR errors', {
+      empty?: true
     })
   }
 
@@ -37,6 +44,7 @@ describe Repossessed::Upserter do
       let(:new_record) { mock('new record') }
 
       before do
+        new_record.stubs(:errors).returns(errors)
         persistence_class.stubs(:create).returns(new_record)
       end
 
@@ -47,6 +55,24 @@ describe Repossessed::Upserter do
 
       it 'returns the record' do
         upserter.save.must_equal new_record
+      end
+
+      describe "when errors are empty" do
+        it 'should be a success' do
+          upserter.save
+          upserter.success?.must_equal true
+        end
+      end
+
+      describe "when errors are not empty" do
+        before do
+          errors.stubs(:empty?).returns(false)
+        end
+
+        it 'should not be a success' do
+          upserter.save
+          upserter.success?.must_equal false
+        end
       end
     end
 
