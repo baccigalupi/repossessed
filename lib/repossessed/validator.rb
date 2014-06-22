@@ -8,14 +8,28 @@ module Repossessed
       @errors = {}
     end
 
-    def ensure(attr, message=nil, &block)
+    def ensure(attr, message_or_key=nil, message=nil, &block)
+      if message_or_key.is_a?(Symbol)
+        block = Repossessed.validator_for(message_or_key)
+      else
+        message ||= message_or_key
+      end
+
       add(
-        Repossessed::Validator::Rule.new(attr, attrs, message, &block)
+        make_rule(attr, block, message)
       )
+    end
+
+    def make_rule(attr, proc, message=nil)
+      Repossessed::Validator::Rule.new(attr, attrs, message, &proc)
     end
 
     def add(rule)
       rules << rule
+    end
+
+    def registrar
+      @registrar ||= Repossessed.validations_registrar
     end
 
     def validate
