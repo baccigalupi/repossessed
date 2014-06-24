@@ -1,6 +1,4 @@
-require 'minitest/spec'
-require 'minitest/autorun'
-require 'minitest/pride'
+require 'spec_helper'
 
 describe Repossessed::Parser do
   class SiftingParser < Repossessed::Parser
@@ -35,7 +33,7 @@ describe Repossessed::Parser do
     let(:parser) { SiftingParser.new(params) }
 
     it 'returns only those attributes' do
-      parser.attrs.must_equal({
+      parser.attrs.should ==({
         fish: 'the dying betta',
         gerbil: 'fuzzy'
       })
@@ -53,7 +51,7 @@ describe Repossessed::Parser do
     let(:parser) { SiftingParser.new(params) }
 
     it 'does not include those keys or values' do
-      parser.attrs.must_equal({
+      parser.attrs.should ==({
         gerbil: 'fuzzy'
       })
     end
@@ -70,7 +68,7 @@ describe Repossessed::Parser do
     let(:parser) { AddingParser.new(params) }
 
     it 'does include the tranformations' do
-      parser.attrs.must_equal({
+      parser.attrs.should ==({
         gerbil: 'fuzzy',
         dog: 'ria'
       })
@@ -88,7 +86,7 @@ describe Repossessed::Parser do
     let(:parser) { SiftingParser.new(params) }
 
     it 'just works' do
-      parser.attrs.must_equal({
+      parser.attrs.should ==({
         gerbil: 'fuzzy'
       })
     end
@@ -108,7 +106,7 @@ describe Repossessed::Parser do
 
     it "can be told to allow certain keys" do
       parser.allow(:bird, :dog)
-      parser.attrs.must_equal({
+      parser.attrs.should ==({
         bird: 'robin'
       })
     end
@@ -120,7 +118,7 @@ describe Repossessed::Parser do
         also: 'this'
       })
 
-      parser.attrs.must_equal({
+      parser.attrs.should ==({
         bird: 'robin',
         gerbil: 'fuzzy',
         random: 'thing',

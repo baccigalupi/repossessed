@@ -1,7 +1,4 @@
-require 'minitest/spec'
-require 'minitest/autorun'
-require 'minitest/pride'
-require 'mocha/mini_test'
+require 'spec_helper'
 
 describe Repossessed::Validator do
   let(:validator) { Repossessed::Validator.new(attrs) }
@@ -17,25 +14,25 @@ describe Repossessed::Validator do
       validator.ensure(:name) { |value| !value.nil? }
       validator.ensure(:gerbil, 'must be cute') { |value| value.include?('cute') }
 
-      validator.validate.must_equal({
+      validator.validate.should ==({
         name: 'name is not valid',
         gerbil: 'must be cute'
       })
     end
 
     it "returns an empty hash when valid" do
-      validator.validate.must_equal({})
+      validator.validate.should ==({})
     end
   end
 
   describe "#valid?" do
     it 'returns true if there are no errors' do
-      validator.valid?.must_equal true
+      validator.valid?.should == true
     end
 
     it 'returs false when there are errors' do
       validator.ensure(:name) { |value| !value.nil? }
-      validator.valid?.must_equal false
+      validator.valid?.should == false
     end
   end
 
@@ -49,12 +46,12 @@ describe Repossessed::Validator do
         end
 
         it 'creates a rule' do
-          validator.rules.size.must_equal 1
-          validator.rules.first.class.must_equal Repossessed::Validator::Rule
+          validator.rules.size.should == 1
+          validator.rules.first.class.should == Repossessed::Validator::Rule
         end
 
         it 'builds an error with the message' do
-          validator.validate.must_equal({
+          validator.validate.should ==({
             name: 'Name must not be nil'
           })
         end
@@ -68,7 +65,7 @@ describe Repossessed::Validator do
         end
 
         it 'uses a custom message' do
-          validator.validate.must_equal({
+          validator.validate.should ==({
             name: 'name is not valid'
           })
         end
@@ -88,7 +85,7 @@ describe Repossessed::Validator do
         end
 
         it "uses the custom message" do
-          validator.validate.must_equal({
+          validator.validate.should ==({
             name: 'Yo, include a name'
           })
         end
@@ -100,7 +97,7 @@ describe Repossessed::Validator do
         end
 
         it 'uses the default' do
-          validator.validate.must_equal({
+          validator.validate.should ==({
             name: 'name is not valid'
           })
         end
@@ -114,7 +111,7 @@ describe Repossessed::Validator do
         value.include?('fish')
       end
       validator.add(rule)
-      validator.rules.first.must_equal(rule)
+      validator.rules.first.should ==(rule)
     end
   end
 end

@@ -1,12 +1,9 @@
-require 'minitest/spec'
-require 'minitest/autorun'
-require 'minitest/pride'
-require 'mocha/mini_test'
+require 'spec_helper'
 
 describe Repossessed::Upserter do
   let(:persistence_class) {
-    stub('AR persistence class', {
-      where: stub(take: record),
+    double('AR persistence class', {
+      where: double(take: record),
       create: record
     })
   }
@@ -19,14 +16,14 @@ describe Repossessed::Upserter do
   }
 
   let(:record) {
-    stub('AR record', {
+    double('AR record', {
       update_attributes: true,
       errors: errors
     })
   }
 
   let(:errors) {
-    stub('AR errors', {
+    double('AR errors', {
       empty?: true
     })
   }
@@ -41,54 +38,54 @@ describe Repossessed::Upserter do
 
     describe 'when the record is new' do
       let(:record) { nil }
-      let(:new_record) { mock('new record') }
+      let(:new_record) { double('new record') }
 
       before do
-        new_record.stubs(:errors).returns(errors)
-        persistence_class.stubs(:create).returns(new_record)
+        new_record.stub(:errors).and_return(errors)
+        persistence_class.stub(:create).and_return(new_record)
       end
 
       it 'creates the record' do
-        persistence_class.expects(:create).with(name: attrs[:name]).returns(new_record)
+        persistence_class.should_receive(:create).with(name: attrs[:name]).and_return(new_record)
         upserter.save
       end
 
       it 'returns the record' do
-        upserter.save.must_equal new_record
+        upserter.save.should == new_record
       end
 
       describe "when errors are empty" do
         it 'should be a success' do
           upserter.save
-          upserter.success?.must_equal true
+          upserter.success?.should == true
         end
       end
 
       describe "when errors are not empty" do
         before do
-          errors.stubs(:empty?).returns(false)
+          errors.should_receive(:empty?).and_return(false)
         end
 
         it 'should not be a success' do
           upserter.save
-          upserter.success?.must_equal false
+          upserter.success?.should == false
         end
       end
     end
 
     describe 'when the record already can be found by id' do
       it 'finds the record in question' do
-        persistence_class.expects(:where).with(id: attrs[:id]).returns(stub(take: record))
+        persistence_class.should_receive(:where).with(id: attrs[:id]).and_return(double(take: record))
         upserter.save
       end
 
       it 'updates the record' do
-        record.expects(:update_attributes).with(name: attrs[:name])
+        record.should_receive(:update_attributes).with(name: attrs[:name])
         upserter.save
       end
 
       it 'returns the record' do
-        upserter.save.must_equal record
+        upserter.save.should == record
       end
     end
   end
@@ -115,7 +112,7 @@ describe Repossessed::Upserter do
     }
 
     it 'finds existing record via these keys' do
-      persistence_class.expects(:where).with(program_id: 324, type: 'that_thing').returns(stub(take: record))
+      persistence_class.should_receive(:where).with(program_id: 324, type: 'that_thing').and_return(double(take: record))
       upserter.save
     end
   end

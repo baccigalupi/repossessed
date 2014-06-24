@@ -1,33 +1,30 @@
-require 'minitest/spec'
-require 'minitest/autorun'
-require 'minitest/pride'
-require 'mocha/mini_test'
+require 'spec_helper'
 
 describe Repossessed::Validator::Registrar do
   let(:registrar) { Repossessed::Validator::Registrar.new }
 
-  let(:stub_lambda) { stub('lambda', call: true) }
+  let(:double_lambda) { double('lambda', call: true) }
 
   describe "#get" do
     it "returns the registered class" do
       registrar.cache = {
-        presence: stub_lambda
+        presence: double_lambda
       }
 
-      registrar.get(:presence).must_equal(stub_lambda)
+      registrar.get(:presence).should ==(double_lambda)
     end
 
     it "raises an error when not registered yet" do
-      proc {
+      expect {
         registrar.get(:foo)
-      }.must_raise Repossessed::Validator::NotRegistered
+      }.to raise_error Repossessed::Validator::NotRegistered
     end
   end
 
   describe '#add' do
     it 'adds the key to the registrar' do
-      registrar.add(:my_validator, stub_lambda)
-      registrar.get(:my_validator).must_equal stub_lambda
+      registrar.add(:my_validator, double_lambda)
+      registrar.get(:my_validator).should == double_lambda
     end
   end
 end

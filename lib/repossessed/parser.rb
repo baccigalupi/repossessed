@@ -1,10 +1,11 @@
 module Repossessed
   class Parser
-    attr_reader :params, :manual_additions
+    attr_reader :params, :manual_additions, :_allowed_keys
 
     def initialize(params)
       @params = params.to_hash.symbolize_keys
       @manual_additions = {}
+      @_allowed_keys = []
     end
 
     def attrs
@@ -29,12 +30,11 @@ module Repossessed
     end
 
     def allow *args
-      @allowed_keys ||= []
-      @allowed_keys += args
+      @_allowed_keys += args
     end
 
     def allowed_keys
-      return @allowed_keys if @allowed_keys
+      return _allowed_keys unless _allowed_keys.empty?
       raise NotImplementedError
     end
   end

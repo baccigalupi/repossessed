@@ -1,8 +1,4 @@
-require 'minitest/spec'
-require 'minitest/autorun'
-require 'minitest/pride'
+require 'spec_helper'
 
 describe Repossessed::Builder do
-
-
 end
