@@ -3,7 +3,7 @@ module Repossessed
     attr_reader :params, :config
 
     def initialize(params, config=nil)
-      @params = params
+      @params = params.to_hash.symbolize_keys
       @config = config || Config.new
     end
 
@@ -19,15 +19,15 @@ module Repossessed
     end
 
     def perform
-      raise ArgumentError.new(config.errors) unless config.empty?
-
+      config.build
+      raise ArgumentError.new(config.errors) unless config.valid?
 
       if valid?
         upserter.save
         after_save if upserter.success?
       end
-      #
-      # serialize
+
+      serialize
     end
 
     def after_save
@@ -40,7 +40,7 @@ module Repossessed
       return @parser if @parser
 
       @parser = parser_class.new(params)
-      @parser.allow(config.allowed_keys)
+      @parser.allow(*config.allowed_keys)
       @parser
     end
 
@@ -49,19 +49,43 @@ module Repossessed
     def validator
       return @validator if @validator
 
-      @validator = validator_class.new(attrs)
-      validations.each do |args|
-        @validator.ensure(*args)
+      @validator = validator_class.new(params)
+      config.validations.each do |validation|
+        if validation[:block]
+          @validator.ensure(*validation[:args], &validation[:block])
+        else
+          @validator.ensure(*validation[:args])
+        end
       end
       @validator
     end
 
-    delegate :valid?, to: :validator
+    delegate :valid?, :errors, to: :validator
 
     def upserter
       return @upserter if @upserter
 
-      @upserter = upserter_class.new(attrs)
+      opts = {attrs: attrs}
+      opts[:persistence_class] = config.persistence_class if config.persistence_class
+      @upserter = upserter_class.new(opts)
+      @upserter
+    end
+
+    delegate :record, :success?, to: :upserter
+
+    def serializer
+      return @serializer if @serializer
+
+      serializable_attrs = record ? record.attributes : attrs
+      @serializer = serializer_class.new(
+        serializable_attrs, errors, (valid? && success?)
+      )
+      @serializer.allow(*config.serializable_keys)
+      @serializer
+    end
+
+    def serialize
+      serializer.to_response
     end
 
     private

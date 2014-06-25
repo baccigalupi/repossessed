@@ -11,7 +11,7 @@ module Repossessed
       end
 
       def report
-        block.call(attrs[attr]) ? {} : errors
+        block.call(attrs[attr], attrs) ? {} : errors
       end
 
       def errors

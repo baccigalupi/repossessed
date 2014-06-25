@@ -1,13 +1,6 @@
 require 'spec_helper'
 
 describe Repossessed::Upserter do
-  let(:persistence_class) {
-    double('AR persistence class', {
-      where: double(take: record),
-      create: record
-    })
-  }
-
   let(:attrs) {
     {
       id: 323,
@@ -15,16 +8,16 @@ describe Repossessed::Upserter do
     }
   }
 
-  let(:record) {
-    double('AR record', {
-      update_attributes: true,
-      errors: errors
+  let(:persistence_class) {
+    double('AR persistence class', {
+      where: double(take: record),
+      create: record
     })
   }
 
-  let(:errors) {
-    double('AR errors', {
-      empty?: true
+  let(:record) {
+    double('AR record', {
+      update_attributes: true,
     })
   }
 
@@ -41,7 +34,6 @@ describe Repossessed::Upserter do
       let(:new_record) { double('new record') }
 
       before do
-        new_record.stub(:errors).and_return(errors)
         persistence_class.stub(:create).and_return(new_record)
       end
 
@@ -54,16 +46,16 @@ describe Repossessed::Upserter do
         upserter.save.should == new_record
       end
 
-      describe "when errors are empty" do
+      describe "when no exception is raised" do
         it 'should be a success' do
           upserter.save
           upserter.success?.should == true
         end
       end
 
-      describe "when errors are not empty" do
+      describe "when an exception is raised" do
         before do
-          errors.should_receive(:empty?).and_return(false)
+          persistence_class.stub(:create).and_raise(ArgumentError.new('wha?'))
         end
 
         it 'should not be a success' do

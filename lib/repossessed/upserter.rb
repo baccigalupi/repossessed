@@ -2,6 +2,7 @@ module Repossessed
   class Upserter
     attr_accessor :attrs
     attr_writer :find_keys, :persistence_class
+    attr_reader :exception
 
     def initialize(opts={})
       @persistence_class = opts[:persistence_class]
@@ -9,21 +10,26 @@ module Repossessed
     end
 
     def save
+      save_and_rescue
+      record
+    end
+
+    def save_and_rescue
       if record
         record.update_attributes(save_attrs)
       else
         create
       end
-
-      record
+    rescue Exception => e
+      @exception = e
     end
 
-    # def delete
-    #   record.delete
-    # end
+    def delete
+      record.delete
+    end
 
     def success?
-      record && record.errors.empty?
+      !exception
     end
 
     def create

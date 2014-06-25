@@ -6,7 +6,7 @@ module Repossessed
       :allowed_keys, :find_keys, :serializable_keys
 
 
-    attr_reader :validations, :after_saves, :built
+    attr_reader :block, :validations, :after_saves, :built
 
     def initialize(persistence_class=nil, &block)
       @persistence_class =  persistence_class
@@ -15,7 +15,7 @@ module Repossessed
       @parser_class =         Parser
       @validator_class =      Validator
       @upserter_class =       Upserter
-      # @serializer_class =   Serializer
+      @serializer_class =     Serializer
 
       # default configuration values
       @validations = []
@@ -25,8 +25,10 @@ module Repossessed
     end
 
     # configuration of validations, same API as validator
-    def ensure(*args)
-      validations << args
+    def ensure(*args, &block)
+      validation = {args: args}
+      validation[:block] = block if block
+      validations << validation
     end
 
     # configuring hooks in the coordinator
@@ -36,9 +38,14 @@ module Repossessed
 
     def build
       @built = false
-      block.call(self)
+      build_with_block if block
       self.serializable_keys ||= allowed_keys
       @built = true
+      self
+    end
+
+    def build_with_block
+      block.call(self)
     end
 
     def validate
@@ -73,6 +80,10 @@ module Repossessed
       {
         allowed_keys: 'allowed keys must be set to an array of values'
       }
+    end
+
+    def self.build(persistence_class=nil, &block)
+      new(persistence_class, &block).build
     end
   end
 end
