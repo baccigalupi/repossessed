@@ -4,7 +4,7 @@ module Repossessed
 
     def initialize(params, config=nil)
       @params = params.to_hash.symbolize_keys
-      @config = config || Config.new
+      @config = config || self.class.config || Config.new
     end
 
     [
@@ -32,7 +32,7 @@ module Repossessed
 
     def after_save
       config.after_saves.each do |block|
-        block.call(this)
+        block.call(self)
       end
     end
 
@@ -40,7 +40,7 @@ module Repossessed
       return @parser if @parser
 
       @parser = parser_class.new(params)
-      @parser.allow(*config.allowed_keys)
+      @parser.allow(*config.allowed_keys) if config.allowed_keys
       @parser
     end
 
@@ -80,12 +80,17 @@ module Repossessed
       @serializer = serializer_class.new(
         serializable_attrs, errors, (valid? && success?)
       )
-      @serializer.allow(*config.serializable_keys)
+      serializable_keys = config.serializable_keys || parser.allowed_keys
+      @serializer.allow(*serializable_keys)
       @serializer
     end
 
     def serialize
       serializer.to_response
+    end
+
+    class << self
+      attr_accessor :config
     end
 
     private
