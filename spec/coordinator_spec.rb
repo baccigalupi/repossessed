@@ -33,246 +33,270 @@ describe Repossessed::Coordinator do
     })
   }
 
-  describe 'when the configuration is basic' do
-    let(:config) {
-      c = Repossessed::Config.new(persistence_class)
-      c.allowed_keys = [:name, :dob, :email]
-      c
-    }
-
-    let(:attrs) {
-      {
-        name: params[:name],
-        dob: params[:dob],
-        email: params[:email]
+  describe '#save aliased to #perform' do
+    describe 'when the configuration is basic' do
+      let(:config) {
+        c = Repossessed::Config.new(persistence_class)
+        c.allowed_keys = [:name, :dob, :email]
+        c
       }
-    }
 
-    it 'saves the record' do
-      persistence_class.should_receive(:create)
-        .with(attrs)
-        .and_return(new_record)
+      let(:attrs) {
+        {
+          name: params[:name],
+          dob: params[:dob],
+          email: params[:email]
+        }
+      }
 
-      coordinator.perform
+      it 'saves the record' do
+        persistence_class.should_receive(:create)
+          .with(attrs)
+          .and_return(new_record)
+
+        coordinator.save
+      end
+
+      it 'returns the serialized response' do
+        coordinator.save.should == {
+          json: attrs.merge(errors: {}),
+          status: 200
+        }
+      end
     end
 
-    it 'returns the serialized response' do
-      coordinator.perform.should == {
-        json: attrs.merge(errors: {}),
+    describe "when adding validations" do
+      let(:config) {
+        Repossessed::Config.build(persistence_class) do |c|
+          c.allowed_keys = [:name, :email, :dob]
+          c.ensure(:password, 'password must match confirmation') do |attr, attrs|
+            attrs[:password] == attrs[:password_confirmation]
+          end
+        end
+      }
+
+      let(:response) { coordinator.save }
+
+      context 'when valid' do
+        it 'should save the record' do
+          persistence_class.should_receive(:create).and_return(found_record)
+          coordinator.save
+        end
+
+        it "should have empty errors" do
+          response[:json][:errors].should be_empty
+        end
+
+        it "should have a success status" do
+          response[:status].should == 200
+        end
+      end
+
+      context 'when not valid' do
+        before do
+          params.merge!(password_confirmation: 'not-right')
+        end
+
+        it 'should not save the record' do
+          persistence_class.should_not_receive(:create)
+          coordinator.save
+        end
+
+        it "should report errors" do
+          response[:json][:errors][:password].should == 'password must match confirmation'
+        end
+
+        it "should have a failure status" do
+          response[:status].should == 400
+        end
+      end
+    end
+
+    describe 'when adding to after save behavior' do
+      let(:config) {
+        Repossessed::Config.build(persistence_class) do |c|
+          c.allowed_keys = [:name, :email, :dob]
+
+          c.ensure(:password, 'password must match confirmation') do |attr, attrs|
+            attrs[:password] == attrs[:password_confirmation]
+          end
+
+          c.after_save do |coordinator|
+            coordinator.instance_variable_set('@foo', 'bar')
+          end
+        end
+      }
+
+      context 'when not valid' do
+        before do
+          params.merge!(password_confirmation: 'not-right')
+        end
+
+        it "does not get called" do
+          coordinator.save
+          coordinator.instance_variable_get('@foo').should be_nil
+        end
+      end
+
+      context 'when valid' do
+        it "gets called" do
+          coordinator.save
+          coordinator.instance_variable_get('@foo').should == 'bar'
+        end
+      end
+    end
+
+    describe 'when a parser class is defined' do
+      let(:config) {
+        Repossessed::Config.build(persistence_class) do |c|
+          c.parser_class = parser_class
+        end
+      }
+
+      let(:parser_class) {
+        class ParserClass
+          def initialize(*args)
+          end
+
+          def allowed_keys
+            [:hello]
+          end
+
+          def attrs
+            {
+              hello: 'new parser class'
+            }
+          end
+        end
+
+        ParserClass
+      }
+
+      it 'uses it for making the attrs' do
+        persistence_class
+          .should_receive(:create)
+          .with({
+            hello: 'new parser class'
+          })
+          .and_return(found_record)
+
+        coordinator.save
+      end
+    end
+
+    describe "when a repository is defined" do
+      let(:config) {
+        Repossessed::Config.build(persistence_class) do |c|
+          c.allowed_keys = [:name, :email, :dob]
+          c.repo_class = repository_class
+        end
+      }
+
+      let(:repository_class) {
+        class RepositoryClassityClassClass
+        end
+
+        RepositoryClassityClassClass
+      }
+
+      let(:repo) {
+        double('repo', save: true, success?: true, record: found_record)
+      }
+
+      it 'uses it for saving the record' do
+        repository_class.should_receive(:new).and_return(repo)
+        repo.should_receive(:save).and_return(found_record)
+        coordinator.save
+      end
+    end
+
+    describe 'when a validator class is defined' do
+      let(:config) {
+        Repossessed::Config.build(persistence_class) do |c|
+          c.allowed_keys = [:name, :email, :dob]
+          c.validator_class = validator_class
+        end
+      }
+
+      let(:validator_class) {
+        class ValidatorClass
+        end
+
+        ValidatorClass
+      }
+
+      let(:validator) { double('validator', errors: {}, valid?: true) }
+
+      it "should use it" do
+        validator_class.should_receive(:new).and_return(validator)
+        coordinator.save
+      end
+    end
+
+    describe 'when a serializer class is defined' do
+      let(:config) {
+        Repossessed::Config.build(persistence_class) do |c|
+          c.allowed_keys = [:name, :email, :dob]
+          c.serializer_class = serializer_class
+        end
+      }
+
+      let(:serializer_class) {
+        class SerializerClass
+        end
+
+        SerializerClass
+      }
+
+      let(:serializer) {
+        double('serializer', allow: nil, to_response: {to: 'response'})
+      }
+
+      it "uses it to serialize" do
+        serializer_class.should_receive(:new).and_return(serializer)
+        coordinator.save.should == {to: 'response'}
+      end
+    end
+
+    describe 'when configuring a class with a string that has to be evaluated' do
+      class DoMyValidations
+      end
+
+      let(:validator) { double('validator', errors: {}, valid?: true) }
+
+      let(:config) {
+        Repossessed::Config.build(persistence_class) do |c|
+          c.allowed_keys = [:name, :email, :dob]
+          c.validator_class = 'DoMyValidations'
+        end
+      }
+
+      it 'finds it and uses it' do
+        DoMyValidations.should_receive(:new).and_return(validator)
+        coordinator.save
+      end
+    end
+  end
+
+  describe "#delete" do
+    let(:config) {
+      Repossessed::Config.build(persistence_class)
+    }
+
+    let(:found_record) {
+      double('record', delete: true)
+    }
+
+    it "deletes the record" do
+      found_record.should_receive(:delete)
+      coordinator.delete
+    end
+
+    it "serializes a response" do
+      coordinator.delete.should == {
+        json: {errors: {}},
         status: 200
       }
-    end
-  end
-
-  describe "when adding validations" do
-    let(:config) {
-      Repossessed::Config.build(persistence_class) do |c|
-        c.allowed_keys = [:name, :email, :dob]
-        c.ensure(:password, 'password must match confirmation') do |attr, attrs|
-          attrs[:password] == attrs[:password_confirmation]
-        end
-      end
-    }
-
-    let(:response) { coordinator.perform }
-
-    context 'when valid' do
-      it 'should save the record' do
-        persistence_class.should_receive(:create).and_return(found_record)
-        coordinator.perform
-      end
-
-      it "should have empty errors" do
-        response[:json][:errors].should be_empty
-      end
-
-      it "should have a success status" do
-        response[:status].should == 200
-      end
-    end
-
-    context 'when not valid' do
-      before do
-        params.merge!(password_confirmation: 'not-right')
-      end
-
-      it 'should not save the record' do
-        persistence_class.should_not_receive(:create)
-        coordinator.perform
-      end
-
-      it "should report errors" do
-        response[:json][:errors][:password].should == 'password must match confirmation'
-      end
-
-      it "should have a failure status" do
-        response[:status].should == 400
-      end
-    end
-  end
-
-  describe 'when adding to after save behavior' do
-    let(:config) {
-      Repossessed::Config.build(persistence_class) do |c|
-        c.allowed_keys = [:name, :email, :dob]
-
-        c.ensure(:password, 'password must match confirmation') do |attr, attrs|
-          attrs[:password] == attrs[:password_confirmation]
-        end
-
-        c.after_save do |coordinator|
-          coordinator.instance_variable_set('@foo', 'bar')
-        end
-      end
-    }
-
-    context 'when not valid' do
-      before do
-        params.merge!(password_confirmation: 'not-right')
-      end
-
-      it "does not get called" do
-        coordinator.perform
-        coordinator.instance_variable_get('@foo').should be_nil
-      end
-    end
-
-    context 'when valid' do
-      it "gets called" do
-        coordinator.perform
-        coordinator.instance_variable_get('@foo').should == 'bar'
-      end
-    end
-  end
-
-  describe 'when a parser class is defined' do
-    let(:config) {
-      Repossessed::Config.build(persistence_class) do |c|
-        c.parser_class = parser_class
-      end
-    }
-
-    let(:parser_class) {
-      class ParserClass
-        def initialize(*args)
-        end
-
-        def allowed_keys
-          [:hello]
-        end
-
-        def attrs
-          {
-            hello: 'new parser class'
-          }
-        end
-      end
-
-      ParserClass
-    }
-
-    it 'uses it for making the attrs' do
-      persistence_class
-        .should_receive(:create)
-        .with({
-          hello: 'new parser class'
-        })
-        .and_return(found_record)
-
-      coordinator.perform
-    end
-  end
-
-  describe "when a repository is defined" do
-    let(:config) {
-      Repossessed::Config.build(persistence_class) do |c|
-        c.allowed_keys = [:name, :email, :dob]
-        c.repo_class = repository_class
-      end
-    }
-
-    let(:repository_class) {
-      class RepositoryClassityClassClass
-      end
-
-      RepositoryClassityClassClass
-    }
-
-    let(:repo) {
-      double('repo', save: true, success?: true, record: found_record)
-    }
-
-    it 'uses it for saving the record' do
-      repository_class.should_receive(:new).and_return(repo)
-      repo.should_receive(:save).and_return(found_record)
-      coordinator.perform
-    end
-  end
-
-  describe 'when a validator class is defined' do
-    let(:config) {
-      Repossessed::Config.build(persistence_class) do |c|
-        c.allowed_keys = [:name, :email, :dob]
-        c.validator_class = validator_class
-      end
-    }
-
-    let(:validator_class) {
-      class ValidatorClass
-      end
-
-      ValidatorClass
-    }
-
-    let(:validator) { double('validator', errors: {}, valid?: true) }
-
-    it "should use it" do
-      validator_class.should_receive(:new).and_return(validator)
-      coordinator.perform
-    end
-  end
-
-  describe 'when a serializer class is defined' do
-    let(:config) {
-      Repossessed::Config.build(persistence_class) do |c|
-        c.allowed_keys = [:name, :email, :dob]
-        c.serializer_class = serializer_class
-      end
-    }
-
-    let(:serializer_class) {
-      class SerializerClass
-      end
-
-      SerializerClass
-    }
-
-    let(:serializer) {
-      double('serializer', allow: nil, to_response: {to: 'response'})
-    }
-
-    it "uses it to serialize" do
-      serializer_class.should_receive(:new).and_return(serializer)
-      coordinator.perform.should == {to: 'response'}
-    end
-  end
-
-  describe 'when configuring a class with a string that has to be evaluated' do
-    class DoMyValidations
-    end
-
-    let(:validator) { double('validator', errors: {}, valid?: true) }
-
-    let(:config) {
-      Repossessed::Config.build(persistence_class) do |c|
-        c.allowed_keys = [:name, :email, :dob]
-        c.validator_class = 'DoMyValidations'
-      end
-    }
-
-    it 'finds it and uses it' do
-      DoMyValidations.should_receive(:new).and_return(validator)
-      coordinator.perform
     end
   end
 end

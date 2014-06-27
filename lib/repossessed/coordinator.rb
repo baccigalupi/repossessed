@@ -7,18 +7,7 @@ module Repossessed
       @config = config || self.class.config || Config.new
     end
 
-    [
-      :persistence_class, :parser_class, :validator_class,
-      :repo_class, :serializer_class
-    ].each do |meth|
-      class_eval <<-RUBY
-        def #{meth}
-          convert_to_class( config.#{meth} )
-        end
-      RUBY
-    end
-
-    def perform
+    def save
       config.build
       raise ArgumentError.new(config.errors) unless config.valid?
 
@@ -28,6 +17,38 @@ module Repossessed
       end
 
       serialize
+    end
+
+    alias :perform :save
+
+    # this looks like a different class entirely,
+    # probably there is an upsert coordinator and a delete coordinator, shielded inside
+    # this top level coordinator
+    def delete
+      config.build
+
+      opts = {attrs: params}
+      opts[:persistence_class] = config.persistence_class if config.persistence_class
+      repo = repo_class.new(opts)
+
+      repo.delete
+
+      serializer = serializer_class.new(
+        {}, errors, repo.success?
+      )
+      serializer.allow(:null)
+      serializer.to_response
+    end
+
+    [
+      :persistence_class, :parser_class, :validator_class,
+      :repo_class, :serializer_class
+    ].each do |meth|
+      class_eval <<-RUBY
+        def #{meth}
+          convert_to_class( config.#{meth} )
+        end
+      RUBY
     end
 
     def after_save

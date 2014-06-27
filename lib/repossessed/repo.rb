@@ -26,6 +26,8 @@ module Repossessed
 
     def delete
       record.delete
+    rescue Exception => e
+      @excetion = e
     end
 
     def success?
