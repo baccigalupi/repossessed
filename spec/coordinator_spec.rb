@@ -36,9 +36,9 @@ describe Repossessed::Coordinator do
   describe '#save aliased to #perform' do
     describe 'when the configuration is basic' do
       let(:config) {
-        c = Repossessed::Config.new(persistence_class)
-        c.allowed_keys = [:name, :dob, :email]
-        c
+        Repossessed::Config.build(persistence_class) do
+          self.allowed_keys = [:name, :dob, :email]
+        end
       }
 
       let(:attrs) {
@@ -67,9 +67,9 @@ describe Repossessed::Coordinator do
 
     describe "when adding validations" do
       let(:config) {
-        Repossessed::Config.build(persistence_class) do |c|
-          c.allowed_keys = [:name, :email, :dob]
-          c.ensure(:password, 'password must match confirmation') do |attr, attrs|
+        Repossessed::Config.build(persistence_class) do
+          self.allowed_keys = [:name, :email, :dob]
+          self.ensure(:password, 'password must match confirmation') do |attr, attrs|
             attrs[:password] == attrs[:password_confirmation]
           end
         end
@@ -114,14 +114,14 @@ describe Repossessed::Coordinator do
 
     describe 'when adding to after save behavior' do
       let(:config) {
-        Repossessed::Config.build(persistence_class) do |c|
-          c.allowed_keys = [:name, :email, :dob]
+        Repossessed::Config.build(persistence_class) do
+          self.allowed_keys = [:name, :email, :dob]
 
-          c.ensure(:password, 'password must match confirmation') do |attr, attrs|
+          self.ensure(:password, 'password must match confirmation') do |attr, attrs|
             attrs[:password] == attrs[:password_confirmation]
           end
 
-          c.after_save do |coordinator|
+          after_save do |coordinator|
             coordinator.instance_variable_set('@foo', 'bar')
           end
         end
@@ -148,29 +148,25 @@ describe Repossessed::Coordinator do
 
     describe 'when a parser class is defined' do
       let(:config) {
-        Repossessed::Config.build(persistence_class) do |c|
-          c.parser_class = parser_class
+        Repossessed::Config.build(persistence_class) do
+          self.parser_class = ParserClass
         end
       }
 
-      let(:parser_class) {
-        class ParserClass
-          def initialize(*args)
-          end
-
-          def allowed_keys
-            [:hello]
-          end
-
-          def attrs
-            {
-              hello: 'new parser class'
-            }
-          end
+      class ParserClass
+        def initialize(*args)
         end
 
-        ParserClass
-      }
+        def allowed_keys
+          [:hello]
+        end
+
+        def attrs
+          {
+            hello: 'new parser class'
+          }
+        end
+      end
 
       it 'uses it for making the attrs' do
         persistence_class
@@ -186,25 +182,21 @@ describe Repossessed::Coordinator do
 
     describe "when a repository is defined" do
       let(:config) {
-        Repossessed::Config.build(persistence_class) do |c|
-          c.allowed_keys = [:name, :email, :dob]
-          c.repo_class = repository_class
+        Repossessed::Config.build(persistence_class) do
+          self.allowed_keys = [:name, :email, :dob]
+          self.repo_class = RepositoryClassityClassClass
         end
       }
 
-      let(:repository_class) {
-        class RepositoryClassityClassClass
-        end
-
-        RepositoryClassityClassClass
-      }
+      class RepositoryClassityClassClass
+      end
 
       let(:repo) {
         double('repo', save: true, success?: true, record: found_record)
       }
 
       it 'uses it for saving the record' do
-        repository_class.should_receive(:new).and_return(repo)
+        RepositoryClassityClassClass.should_receive(:new).and_return(repo)
         repo.should_receive(:save).and_return(found_record)
         coordinator.save
       end
@@ -212,48 +204,40 @@ describe Repossessed::Coordinator do
 
     describe 'when a validator class is defined' do
       let(:config) {
-        Repossessed::Config.build(persistence_class) do |c|
-          c.allowed_keys = [:name, :email, :dob]
-          c.validator_class = validator_class
+        Repossessed::Config.build(persistence_class) do
+          self.allowed_keys = [:name, :email, :dob]
+          self.validator_class = ValidatorClass
         end
       }
 
-      let(:validator_class) {
-        class ValidatorClass
-        end
-
-        ValidatorClass
-      }
+      class ValidatorClass
+      end
 
       let(:validator) { double('validator', errors: {}, valid?: true) }
 
       it "should use it" do
-        validator_class.should_receive(:new).and_return(validator)
+        ValidatorClass.should_receive(:new).and_return(validator)
         coordinator.save
       end
     end
 
     describe 'when a serializer class is defined' do
       let(:config) {
-        Repossessed::Config.build(persistence_class) do |c|
-          c.allowed_keys = [:name, :email, :dob]
-          c.serializer_class = serializer_class
+        Repossessed::Config.build(persistence_class) do
+          self.allowed_keys = [:name, :email, :dob]
+          self.serializer_class = SerializerClass
         end
       }
 
-      let(:serializer_class) {
-        class SerializerClass
-        end
-
-        SerializerClass
-      }
+      class SerializerClass
+      end
 
       let(:serializer) {
         double('serializer', allow: nil, to_response: {to: 'response'})
       }
 
       it "uses it to serialize" do
-        serializer_class.should_receive(:new).and_return(serializer)
+        SerializerClass.should_receive(:new).and_return(serializer)
         coordinator.save.should == {to: 'response'}
       end
     end
@@ -265,9 +249,9 @@ describe Repossessed::Coordinator do
       let(:validator) { double('validator', errors: {}, valid?: true) }
 
       let(:config) {
-        Repossessed::Config.build(persistence_class) do |c|
-          c.allowed_keys = [:name, :email, :dob]
-          c.validator_class = 'DoMyValidations'
+        Repossessed::Config.build(persistence_class) do
+          self.allowed_keys = [:name, :email, :dob]
+          self.validator_class = 'DoMyValidations'
         end
       }
 

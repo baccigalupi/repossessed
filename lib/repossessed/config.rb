@@ -14,7 +14,7 @@ module Repossessed
       # default classes
       @parser_class =         Parser
       @validator_class =      Validator
-      @repo_class =       Repo
+      @repo_class =           Repo
       @serializer_class =     Serializer
 
       # default configuration values
@@ -44,8 +44,13 @@ module Repossessed
       self
     end
 
+    def config
+      self
+    end
+
+
     def build_with_block
-      block.call(self)
+      instance_eval &block
     end
 
     def validate
