@@ -37,7 +37,7 @@ describe Repossessed::Coordinator do
     describe 'when the configuration is basic' do
       let(:config) {
         Repossessed::Config.build(persistence_class) do
-          self.allowed_keys = [:name, :dob, :email]
+          permit :name, :dob, :email
         end
       }
 
@@ -68,8 +68,9 @@ describe Repossessed::Coordinator do
     describe "when adding validations" do
       let(:config) {
         Repossessed::Config.build(persistence_class) do
-          self.allowed_keys = [:name, :email, :dob]
-          self.ensure(:password, 'password must match confirmation') do |attr, attrs|
+          permit :name, :email, :dob
+
+          validate(:password, 'password must match confirmation') do |attr, attrs|
             attrs[:password] == attrs[:password_confirmation]
           end
         end
@@ -115,9 +116,9 @@ describe Repossessed::Coordinator do
     describe 'when adding to after save behavior' do
       let(:config) {
         Repossessed::Config.build(persistence_class) do
-          self.allowed_keys = [:name, :email, :dob]
+          permit :name, :email, :dob
 
-          self.ensure(:password, 'password must match confirmation') do |attr, attrs|
+          validate(:password) do |attr, attrs|
             attrs[:password] == attrs[:password_confirmation]
           end
 
@@ -149,7 +150,7 @@ describe Repossessed::Coordinator do
     describe 'when a parser class is defined' do
       let(:config) {
         Repossessed::Config.build(persistence_class) do
-          self.parser_class = ParserClass
+          parser_class ParserClass
         end
       }
 
@@ -183,8 +184,9 @@ describe Repossessed::Coordinator do
     describe "when a repository is defined" do
       let(:config) {
         Repossessed::Config.build(persistence_class) do
-          self.allowed_keys = [:name, :email, :dob]
-          self.repo_class = RepositoryClassityClassClass
+          permit :name, :email, :dob
+
+          repo_class RepositoryClassityClassClass
         end
       }
 
@@ -205,8 +207,9 @@ describe Repossessed::Coordinator do
     describe 'when a validator class is defined' do
       let(:config) {
         Repossessed::Config.build(persistence_class) do
-          self.allowed_keys = [:name, :email, :dob]
-          self.validator_class = ValidatorClass
+          permit :name, :email, :dob
+
+          validator_class ValidatorClass
         end
       }
 
@@ -224,8 +227,9 @@ describe Repossessed::Coordinator do
     describe 'when a serializer class is defined' do
       let(:config) {
         Repossessed::Config.build(persistence_class) do
-          self.allowed_keys = [:name, :email, :dob]
-          self.serializer_class = SerializerClass
+          permit :name, :email, :dob
+
+          serializer_class SerializerClass
         end
       }
 
@@ -250,8 +254,9 @@ describe Repossessed::Coordinator do
 
       let(:config) {
         Repossessed::Config.build(persistence_class) do
-          self.allowed_keys = [:name, :email, :dob]
-          self.validator_class = 'DoMyValidations'
+          permit :name, :email, :dob
+
+          validator_class 'DoMyValidations'
         end
       }
 
