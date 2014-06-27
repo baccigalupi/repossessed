@@ -6,7 +6,7 @@ require "repossessed/version"
 
 require "repossessed/facade"
 require "repossessed/parser"
-require "repossessed/upserter"
+require "repossessed/repo"
 require "repossessed/serializer"
 require "repossessed/validator"
 require "repossessed/validator/rule"

@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe Repossessed::Upserter do
+describe Repossessed::Repo do
   let(:attrs) {
     {
       id: 323,
@@ -22,8 +22,8 @@ describe Repossessed::Upserter do
   }
 
   describe "when all the needed stuff is passed in" do
-    let(:upserter) {
-      Repossessed::Upserter.new({
+    let(:repo) {
+      Repossessed::Repo.new({
         persistence_class: persistence_class,
         attrs: attrs
       })
@@ -39,17 +39,17 @@ describe Repossessed::Upserter do
 
       it 'creates the record' do
         persistence_class.should_receive(:create).with(name: attrs[:name]).and_return(new_record)
-        upserter.save
+        repo.save
       end
 
       it 'returns the record' do
-        upserter.save.should == new_record
+        repo.save.should == new_record
       end
 
       describe "when no exception is raised" do
         it 'should be a success' do
-          upserter.save
-          upserter.success?.should == true
+          repo.save
+          repo.success?.should == true
         end
       end
 
@@ -59,8 +59,8 @@ describe Repossessed::Upserter do
         end
 
         it 'should not be a success' do
-          upserter.save
-          upserter.success?.should == false
+          repo.save
+          repo.success?.should == false
         end
       end
     end
@@ -68,32 +68,32 @@ describe Repossessed::Upserter do
     describe 'when the record already can be found by id' do
       it 'finds the record in question' do
         persistence_class.should_receive(:where).with(id: attrs[:id]).and_return(double(take: record))
-        upserter.save
+        repo.save
       end
 
       it 'updates the record' do
         record.should_receive(:update_attributes).with(name: attrs[:name])
-        upserter.save
+        repo.save
       end
 
       it 'returns the record' do
-        upserter.save.should == record
+        repo.save.should == record
       end
     end
   end
 
   describe "when class is configured" do
-    let(:upserter_class) {
-      class UpserterClass < Repossessed::Upserter
+    let(:repo_class) {
+      class RepoClass < Repossessed::Repo
         def find_keys
           [:program_id, :type]
         end
       end
 
-      UpserterClass
+      RepoClass
     }
 
-    let(:upserter) { upserter_class.new(attrs: attrs, persistence_class: persistence_class) }
+    let(:repo) { repo_class.new(attrs: attrs, persistence_class: persistence_class) }
 
     let(:attrs) {
       {
@@ -105,7 +105,7 @@ describe Repossessed::Upserter do
 
     it 'finds existing record via these keys' do
       persistence_class.should_receive(:where).with(program_id: 324, type: 'that_thing').and_return(double(take: record))
-      upserter.save
+      repo.save
     end
   end
 end

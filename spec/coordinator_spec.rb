@@ -187,15 +187,15 @@ describe Repossessed::Coordinator do
     let(:config) {
       Repossessed::Config.build(persistence_class) do |c|
         c.allowed_keys = [:name, :email, :dob]
-        c.upserter_class = repository_class
+        c.repo_class = repository_class
       end
     }
 
     let(:repository_class) {
-      class RepoClass
+      class RepositoryClassityClassClass
       end
 
-      RepoClass
+      RepositoryClassityClassClass
     }
 
     let(:repo) {

@@ -9,7 +9,7 @@ module Repossessed
 
     [
       :persistence_class, :parser_class, :validator_class,
-      :upserter_class, :serializer_class
+      :repo_class, :serializer_class
     ].each do |meth|
       class_eval <<-RUBY
         def #{meth}
@@ -23,8 +23,8 @@ module Repossessed
       raise ArgumentError.new(config.errors) unless config.valid?
 
       if valid?
-        upserter.save
-        after_save if upserter.success?
+        repo.save
+        after_save if repo.success?
       end
 
       serialize
@@ -62,16 +62,16 @@ module Repossessed
 
     delegate :valid?, :errors, to: :validator
 
-    def upserter
-      return @upserter if @upserter
+    def repo
+      return @repo if @repo
 
       opts = {attrs: attrs}
       opts[:persistence_class] = config.persistence_class if config.persistence_class
-      @upserter = upserter_class.new(opts)
-      @upserter
+      @repo = repo_class.new(opts)
+      @repo
     end
 
-    delegate :record, :success?, to: :upserter
+    delegate :record, :success?, to: :repo
 
     def serializer
       return @serializer if @serializer

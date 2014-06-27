@@ -1,7 +1,7 @@
 module Repossessed
   class Config
     attr_accessor :persistence_class, :parser_class, :validator_class,
-      :upserter_class, :serializer_class,
+      :repo_class, :serializer_class,
 
       :allowed_keys, :find_keys, :serializable_keys
 
@@ -14,7 +14,7 @@ module Repossessed
       # default classes
       @parser_class =         Parser
       @validator_class =      Validator
-      @upserter_class =       Upserter
+      @repo_class =       Repo
       @serializer_class =     Serializer
 
       # default configuration values
@@ -66,9 +66,9 @@ module Repossessed
       end
     end
 
-    # upserter class is custom or it must be configured
+    # repo class is custom or it must be configured
     def persistence_class_errors
-      return {} if persistence_class || upserter_class != Upserter
+      return {} if persistence_class || repo_class != Repo
       {
         persistence_class: 'persistence_class must be set'
       }

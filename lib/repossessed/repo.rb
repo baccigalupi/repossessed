@@ -1,5 +1,5 @@
 module Repossessed
-  class Upserter
+  class Repo
     attr_accessor :attrs
     attr_writer :find_keys, :persistence_class
     attr_reader :exception
