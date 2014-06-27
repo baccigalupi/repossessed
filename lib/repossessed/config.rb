@@ -1,7 +1,7 @@
 module Repossessed
   class Config
     attr_accessor :allowed_keys, :find_keys, :serializable_keys
-    attr_reader :block, :validations, :after_saves, :built
+    attr_reader :block, :validations, :after_saves, :built, :mixins
 
     def initialize(persistence_class=nil, &block)
       @persistence_class =  persistence_class
@@ -19,20 +19,20 @@ module Repossessed
       @block = block
     end
 
-    def getter_setter(name, var=nil)
-      if var
-        instance_variable_set("@#{name}", var)
-      else
-        instance_variable_get("@#{name}")
-      end
-    end
-
     [:persistence_class, :parser_class, :validator_class, :repo_class, :serializer_class].each do |class_type|
       class_eval <<-RUBY
         def #{class_type} val=nil
           getter_setter(:#{class_type}, val)
         end
       RUBY
+    end
+
+    def getter_setter(name, var=nil)
+      if var
+        instance_variable_set("@#{name}", var)
+      else
+        instance_variable_get("@#{name}")
+      end
     end
 
     def permit *keys
@@ -71,8 +71,8 @@ module Repossessed
       self
     end
 
-    def config
-      self
+    def mixin(&block)
+      @mixins = block
     end
 
     def build_with_block

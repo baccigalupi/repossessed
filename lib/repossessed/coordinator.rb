@@ -1,14 +1,16 @@
 module Repossessed
   class Coordinator
-    attr_reader :params, :config
+    attr_reader :params
 
-    def initialize(params, config=nil)
+    def initialize(params)
       @params = params.to_hash.symbolize_keys
-      @config = config || self.class.config || Config.new
+    end
+
+    def config
+      self.class.config
     end
 
     def save
-      config.build
       raise ArgumentError.new(config.errors) unless config.valid?
 
       if valid?
@@ -110,8 +112,15 @@ module Repossessed
       serializer.to_response
     end
 
-    class << self
-      attr_accessor :config
+    def self.config=(c)
+      @config = c
+      @config.build
+      class_eval &@config.mixins if @config.mixins
+      @config
+    end
+
+    def self.config
+      @config
     end
 
     private

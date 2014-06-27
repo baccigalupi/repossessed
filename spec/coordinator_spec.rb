@@ -2,7 +2,12 @@ require 'spec_helper'
 
 describe Repossessed::Coordinator do
   let(:coordinator) {
-    Repossessed::Coordinator.new(params, config)
+    # make an anonymous subclass of the coordinator
+    klass = Class.new(Repossessed::Coordinator)
+    # set the configuation
+    klass.config = config
+    # make an instance of the subclass
+    klass.new(params)
   }
 
   let(:params) {
@@ -267,6 +272,10 @@ describe Repossessed::Coordinator do
     end
   end
 
+  describe '#get' do
+    # it gets the record by find keys and serializes it
+  end
+
   describe "#delete" do
     let(:config) {
       Repossessed::Config.build(persistence_class)
@@ -286,6 +295,29 @@ describe Repossessed::Coordinator do
         json: {errors: {}},
         status: 200
       }
+    end
+  end
+
+  describe "when there are mixins" do
+    let(:config) {
+      Repossessed::Config.build(persistence_class) do
+        permit :name, :email, :dob
+
+        mixin do
+          def after_save
+            @hello = 'hola'
+          end
+
+          def hello
+            @hello
+          end
+        end
+      end
+    }
+
+    it "makes that available in the coordinator" do
+      coordinator.save
+      coordinator.hello.should == 'hola'
     end
   end
 end
