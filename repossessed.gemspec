@@ -8,9 +8,9 @@ Gem::Specification.new do |spec|
   spec.version       = Repossessed::VERSION
   spec.authors       = ["Kane Baccigalupi"]
   spec.email         = ["developers@socialchorus.com"]
-  spec.description   = %q{TODO: Write a gem description}
-  spec.summary       = %q{TODO: Write a gem summary}
-  spec.homepage      = ""
+  spec.description   = %q{Repository, Validator, Parser rebuild to repossess your code from ActiveRecord}
+  spec.summary       = %q{Repository, Validator, Parser rebuild to repossess your code from ActiveRecord}
+  spec.homepage      = "http://github.com/socialchorus/repossessed"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files`.split($/)
