@@ -42,16 +42,9 @@ module Repossessed
       serializer.to_response
     end
 
-    [
-      :persistence_class, :parser_class, :validator_class,
-      :repo_class, :serializer_class
-    ].each do |meth|
-      class_eval <<-RUBY
-        def #{meth}
-          convert_to_class( config.#{meth} )
-        end
-      RUBY
-    end
+    delegate :persistence_class, :parser_class, :validator_class,
+      :repo_class, :serializer_class,
+        to: :config
 
     def after_save
       config.after_saves.each do |block|
@@ -121,13 +114,6 @@ module Repossessed
 
     def self.config
       @config
-    end
-
-    private
-
-    def convert_to_class(thing)
-      return thing if thing.is_a?(Class)
-      ActiveSupport::Inflector.constantize(thing)
     end
   end
 end

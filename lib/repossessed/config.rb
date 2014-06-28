@@ -4,7 +4,7 @@ module Repossessed
     attr_reader :block, :validations, :after_saves, :built, :mixins
 
     def initialize(persistence_class=nil, &block)
-      @persistence_class =  persistence_class
+      @persistence_class =  convert_to_class(persistence_class)
 
       # default classes
       @parser_class =         Parser
@@ -29,6 +29,7 @@ module Repossessed
 
     def getter_setter(name, var=nil)
       if var
+        var = convert_to_class(var)
         instance_variable_set("@#{name}", var)
       else
         instance_variable_get("@#{name}")
@@ -111,6 +112,13 @@ module Repossessed
 
     def self.build(persistence_class=nil, &block)
       new(persistence_class, &block).build
+    end
+
+    private
+
+    def convert_to_class(thing)
+      return thing if thing.is_a?(Class)
+      ActiveSupport::Inflector.constantize(thing)
     end
   end
 end
