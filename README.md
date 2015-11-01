@@ -1,16 +1,17 @@
 # Repossessed
 
-Repossessed aims to take all the things that make active record easy and fast to
-work with, and put them in another object. Huh? The problem with everything that
-AR tries to do for you, is that you can't make it stop; you can't decompose it
-easily into simple, easy to change objects with just on responsibilities ... when
-things go terribly big and complicated.
+Repossessed provides [Single Responsibility](https://en.wikipedia.org/wiki/Single_responsibility_principle) for your ActiveRecord convenience.
+ActiveRecord does everything for you. At first it seems like heaven. Then the callbacks become a complex maze of the unknown. Validations are applied with complex conditionals on the class level. All this happens because we are breaking single responsibility, and as the user stories generate many uses for the same record, our poor ActiveRecord object can't keep up with the complexity.
+
+Repossessed aims to be as easy as ActiveRecord, with convention over configuration and easy configuration. It does this by extracting the many responsibilities of an ActiveRecord object into a builder class. When the configuration becomes to complex, you can customize each of the underlying objects.
 
 Repossessed uses the builder pattern to configure a class that parses params,
 validates the params (yup, the params), saves and serializes to a json response
 replete with a status and errors.
 
-It was built for creating json APIs, but you can just ignore that part, if you want.
+Repossessed was originally created to generate JSON APIs. JSON params
+were parsed, processed and then serialized seamlessly. In progress are
+conveniences that make standard Rails view renders easier too.
 
 ## Installation
 
