@@ -7,8 +7,15 @@
 $: << File.dirname(__FILE__) + "/../"
 require 'lib/repossessed'
 
+require 'active_record'
+
 Dir.glob("./spec/support/**/*.rb").each { |f| require f }
 
+require 'yaml'
+require 'active_record'
+
+configuration = YAML.load(File.read(File.expand_path("db/database.yml", File.dirname(__FILE__))))
+ActiveRecord::Base.establish_connection(configuration['test'])
 
 RSpec.configure do |config|
   config.treat_symbols_as_metadata_keys_with_true_values = true

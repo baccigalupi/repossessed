@@ -2,12 +2,13 @@ require 'spec_helper'
 
 describe Repossessed::Coordinator do
   let(:coordinator) {
-    # make an anonymous subclass of the coordinator
+    coordinator_class.new(params)
+  }
+
+  let(:coordinator_class) {
     klass = Class.new(Repossessed::Coordinator)
-    # set the configuation
     klass.config = config
-    # make an instance of the subclass
-    klass.new(params)
+    klass
   }
 
   let(:params) {
@@ -20,33 +21,15 @@ describe Repossessed::Coordinator do
     }
   }
 
-  class PersistenceClass
-  end
-
-  let(:persistence_class) {
-    PersistenceClass
-  }
-
-  let(:found_record) {
-    nil
-  }
-
-  let(:new_record) {
-    double('AR record', {
-      update_attributes: true,
-      attributes: params
-    })
-  }
-
   before do
-    persistence_class.stub(:where).and_return(double(take: found_record))
-    persistence_class.stub(:create).and_return(found_record)
+    User.delete_all
+    Greeter.delete_all
   end
 
   describe '#save aliased to #perform' do
     describe 'when the configuration is basic' do
       let(:config) {
-        Repossessed::Config.build(persistence_class) do
+        Repossessed::Config.build(User) do
           permit :name, :dob, :email
         end
       }
@@ -60,11 +43,9 @@ describe Repossessed::Coordinator do
       }
 
       it 'saves the record' do
-        persistence_class.should_receive(:create)
-          .with(attrs)
-          .and_return(new_record)
-
-        coordinator.save
+        expect {
+          coordinator.save
+        }.to change { User.count }.by(1)
       end
 
       it 'returns the serialized response' do
@@ -77,7 +58,7 @@ describe Repossessed::Coordinator do
 
     describe "when adding validations" do
       let(:config) {
-        Repossessed::Config.build(persistence_class) do
+        Repossessed::Config.build(User) do
           permit :name, :email, :dob
 
           validate(:password, 'password must match confirmation') do |attr, attrs|
@@ -90,8 +71,9 @@ describe Repossessed::Coordinator do
 
       context 'when valid' do
         it 'should save the record' do
-          persistence_class.should_receive(:create).and_return(found_record)
-          coordinator.save
+          expect {
+            coordinator.save
+          }.to change { User.count }.by(1)
         end
 
         it "should have empty errors" do
@@ -109,8 +91,9 @@ describe Repossessed::Coordinator do
         end
 
         it 'should not save the record' do
-          persistence_class.should_not_receive(:create)
-          coordinator.save
+          expect {
+            coordinator.save
+          }.to_not change { User.count }
         end
 
         it "should report errors" do
@@ -125,7 +108,7 @@ describe Repossessed::Coordinator do
 
     describe 'when adding to after save behavior' do
       let(:config) {
-        Repossessed::Config.build(persistence_class) do
+        Repossessed::Config.build(User) do
           permit :name, :email, :dob
 
           validate(:password) do |attr, attrs|
@@ -159,7 +142,7 @@ describe Repossessed::Coordinator do
 
     describe 'when a parser class is defined' do
       let(:config) {
-        Repossessed::Config.build(persistence_class) do
+        Repossessed::Config.build(Greeter) do
           parser_class ParserClass
         end
       }
@@ -180,20 +163,14 @@ describe Repossessed::Coordinator do
       end
 
       it 'uses it for making the attrs' do
-        persistence_class
-          .should_receive(:create)
-          .with({
-            hello: 'new parser class'
-          })
-          .and_return(found_record)
-
         coordinator.save
+        Greeter.first.hello.should == 'new parser class'
       end
     end
 
     describe "when a repository is defined" do
       let(:config) {
-        Repossessed::Config.build(persistence_class) do
+        Repossessed::Config.build(User) do
           permit :name, :email, :dob
 
           repo_class RepositoryClassityClassClass
@@ -204,19 +181,19 @@ describe Repossessed::Coordinator do
       end
 
       let(:repo) {
-        double('repo', save: true, success?: true, record: found_record)
+        double('repo', save: true, success?: true, record: nil)
       }
 
       it 'uses it for saving the record' do
         RepositoryClassityClassClass.should_receive(:new).and_return(repo)
-        repo.should_receive(:save).and_return(found_record)
+        repo.should_receive(:save)
         coordinator.save
       end
     end
 
     describe 'when a validator class is defined' do
       let(:config) {
-        Repossessed::Config.build(persistence_class) do
+        Repossessed::Config.build(User) do
           permit :name, :email, :dob
 
           validator_class ValidatorClass
@@ -236,7 +213,7 @@ describe Repossessed::Coordinator do
 
     describe 'when a serializer class is defined' do
       let(:config) {
-        Repossessed::Config.build(persistence_class) do
+        Repossessed::Config.build(User) do
           permit :name, :email, :dob
 
           serializer_class SerializerClass
@@ -263,7 +240,7 @@ describe Repossessed::Coordinator do
       let(:validator) { double('validator', errors: {}, valid?: true) }
 
       let(:config) {
-        Repossessed::Config.build(persistence_class) do
+        Repossessed::Config.build(User) do
           permit :name, :email, :dob
 
           validator_class 'DoMyValidations'
@@ -277,22 +254,26 @@ describe Repossessed::Coordinator do
     end
   end
 
-  describe '#get' do
-    # it gets the record by find keys and serializes it
-  end
-
   describe "#delete" do
+    let(:params) {
+      {
+        id: found_record.id
+      }
+    }
+
     let(:config) {
-      Repossessed::Config.build(persistence_class)
+      Repossessed::Config.build(User)
     }
 
     let(:found_record) {
-      double('record', delete: true)
+      User.create
     }
 
     it "deletes the record" do
-      found_record.should_receive(:delete)
-      coordinator.delete
+      coordinator = coordinator_class.new(params)
+      expect {
+        coordinator.delete
+      }.to change { User.count }.by(-1)
     end
 
     it "serializes a response" do
@@ -305,7 +286,7 @@ describe Repossessed::Coordinator do
 
   describe "when there are mixins" do
     let(:config) {
-      Repossessed::Config.build(persistence_class) do
+      Repossessed::Config.build(User) do
         permit :name, :email, :dob
 
         mixin do

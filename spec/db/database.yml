@@ -1,0 +1,11 @@
+development:
+  adapter: sqlite3
+  database: spec/db/repossessed_development.sqlite3
+  pool: 5
+  timeout: 5000
+
+test:
+  adapter: sqlite3
+  database: spec/db/repossessed_test.sqlite3
+  pool: 5
+  timeout: 5000

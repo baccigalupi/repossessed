@@ -1,19 +1,24 @@
 require "bundler/gem_tasks"
 
-require 'rake/testtask'
-require 'minitest'
+require 'rspec/core/rake_task'
+RSpec::Core::RakeTask.new(:spec)
 
-desc "run specs"
-task :spec do
-  $: << File.dirname(__FILE__)
 
-  require 'lib/repossessed'
+namespace :db do
+  desc "Create dbs: no-op because sqlite"
+  task :create do
+    # no-op
+  end
 
-  Dir.glob("./spec/support/**/*.rb").each { |f| require f }
+  desc "Run migrations"
+  task :migrate do
+    require 'yaml'
+    require 'active_record'
 
-  if spec = ARGV[1]
-    require spec
-  else
-    Dir.glob('./spec/**/*_spec.rb').each { |file| require file}
+    configuration = YAML.load(File.read(File.expand_path("../spec/db/database.yml", __FILE__)))
+    env = ENV['RAILS_ENV'] || ENV['RACK_ENV'] || 'test'
+    ActiveRecord::Base.establish_connection(configuration[env])
+
+    ActiveRecord::Migrator.migrate(File.expand_path('../spec/db/migrations', __FILE__))
   end
 end

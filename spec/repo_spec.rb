@@ -8,42 +8,33 @@ describe Repossessed::Repo do
     }
   }
 
-  let(:persistence_class) {
-    double('AR persistence class', {
-      where: double(take: record),
-      create: record
-    })
-  }
-
-  let(:record) {
-    double('AR record', {
-      update_attributes: true,
-    })
-  }
+  before do
+    User.delete_all
+    ProgramConfiguration.delete_all
+  end
 
   describe "when all the needed stuff is passed in" do
     let(:repo) {
       Repossessed::Repo.new({
-        persistence_class: persistence_class,
+        persistence_class: User,
         attrs: attrs
       })
     }
 
     describe 'when the record is new' do
-      let(:record) { nil }
-      let(:new_record) { double('new record') }
-
-      before do
-        persistence_class.stub(:create).and_return(new_record)
-      end
-
       it 'creates the record' do
-        persistence_class.should_receive(:create).with(name: attrs[:name]).and_return(new_record)
-        repo.save
+        expect {
+          repo.save
+        }.to change { User.count }.by(1)
       end
 
       it 'returns the record' do
-        repo.save.should == new_record
+        expect(repo.save).to be_a(User)
+      end
+
+      it 'adds has the right attributes' do
+        repo.save
+        expect(repo.record.name).to eq(attrs[:name])
       end
 
       describe "when no exception is raised" do
@@ -55,25 +46,34 @@ describe Repossessed::Repo do
 
       describe "when an exception is raised" do
         before do
-          persistence_class.stub(:create).and_raise(ArgumentError.new('wha?'))
+          User.stub(:create).and_raise(ArgumentError.new('wha?'))
         end
 
         it 'should not be a success' do
           repo.save
           repo.success?.should == false
         end
+
+        it 'makes the exception available' do
+          repo.save
+          expect(repo.exception.message).to eq('wha?')
+        end
       end
     end
 
     describe 'when the record already can be found by id' do
+      let!(:record) {
+        User.create(id: attrs[:id], name: 'not yo daddy')
+      }
+
       it 'finds the record in question' do
-        persistence_class.should_receive(:where).with(id: attrs[:id]).and_return(double(take: record))
         repo.save
+        expect(repo.record).to eq(record)
       end
 
       it 'updates the record' do
-        record.should_receive(:update_attributes).with(name: attrs[:name])
         repo.save
+        expect(repo.record.name).to eq(attrs[:name])
       end
 
       it 'returns the record' do
@@ -93,7 +93,7 @@ describe Repossessed::Repo do
       RepoClass
     }
 
-    let(:repo) { repo_class.new(attrs: attrs, persistence_class: persistence_class) }
+    let(:repo) { repo_class.new(attrs: attrs, persistence_class: ProgramConfiguration) }
 
     let(:attrs) {
       {
@@ -103,9 +103,18 @@ describe Repossessed::Repo do
       }
     }
 
+    let!(:record) {
+      ProgramConfiguration.create(program_id: attrs[:program_id], type: attrs[:type], _value: 'wha?')
+    }
+
     it 'finds existing record via these keys' do
-      persistence_class.should_receive(:where).with(program_id: 324, type: 'that_thing').and_return(double(take: record))
       repo.save
+      expect(repo.record).to eq(record)
+    end
+
+    it 'updates the record' do
+      repo.save
+      expect(repo.record._value).to eq(attrs[:_value])
     end
   end
 end
